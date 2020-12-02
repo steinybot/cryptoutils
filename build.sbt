@@ -6,11 +6,11 @@ version := "1.4.3"
 
 isSnapshot := version.value.endsWith("SNAPSHOT")
 
-scalaVersion := "2.12.3"
+scalaVersion := "2.12.12"
 
-crossScalaVersions := Seq("2.11.11", "2.12.3")
+crossScalaVersions := Seq("2.11.12", "2.12.12")
 
-resolvers += "softprops-maven" at "http://dl.bintray.com/content/softprops/maven"
+resolvers += "softprops-maven" at "https://dl.bintray.com/content/softprops/maven"
 
 libraryDependencies ++= Seq(
   "commons-io" % "commons-io" % "2.5",
@@ -34,7 +34,7 @@ publishArtifact in Test := false
 
 pomIncludeRepository := { _ ⇒ false }
 
-licenses := Seq("The MIT License" → url("http://opensource.org/licenses/MIT"))
+licenses := Seq("The MIT License" → url("https://opensource.org/licenses/MIT"))
 
 homepage := Some(url(s"https://github.com/Karasiq/${name.value}"))
 
