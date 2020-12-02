@@ -4,7 +4,7 @@ import java.io.{InputStream, OutputStream}
 import java.net.{InetAddress, Socket, SocketAddress}
 import java.nio.channels.SocketChannel
 
-import org.bouncycastle.crypto.tls.TlsProtocol
+import org.bouncycastle.tls.TlsProtocol
 
 final private[tls] class SocketWrapper(connection: Socket, protocol: TlsProtocol) extends Socket {
   override def shutdownInput(): Unit = connection.shutdownInput()

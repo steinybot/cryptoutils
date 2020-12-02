@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 import java.nio.channels.SocketChannel
 import java.util
 
-import org.bouncycastle.crypto.tls.TlsProtocol
+import org.bouncycastle.tls.TlsProtocol
 import sun.nio.ch.{SelChImpl, SelectionKeyImpl}
 
 private[tls] object SocketChannelWrapper {

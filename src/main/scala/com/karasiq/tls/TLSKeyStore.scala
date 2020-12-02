@@ -113,7 +113,7 @@ class TLSKeyStore(val keyStore: KeyStore = TLSKeyStore.defaultKeyStore(), val pa
   }
 
   def getCertificate(alias: String): TLS.Certificate = {
-    keyStore.getCertificate(alias).toTlsCertificate
+    keyStore.getCertificate(alias).toCertificate
   }
 
   def getKeySet(alias: String, password: String = password): TLS.KeySet = {

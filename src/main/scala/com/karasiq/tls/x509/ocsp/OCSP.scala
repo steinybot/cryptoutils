@@ -93,7 +93,9 @@ object OCSP {
     extGen.addExtension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce, false, nonce)
     builder.setRequestExtensions(extGen.generate())
 
-    builder.build(X509Utils.contentSigner(signer.key.getPrivate.toPrivateKey), signer.certificateChain.getCertificateList.map(new X509CertificateHolder(_)))
+    builder.build(
+      X509Utils.contentSigner(signer.key.getPrivate.toPrivateKey),
+      signer.certificateChain.getCertificateList.map(tlsCert => new X509CertificateHolder(tlsCert.toCertificate)))
   }
 
   /**
@@ -117,7 +119,10 @@ object OCSP {
       case (b, Status(id, status)) ⇒
         b.addResponse(id, status)
     }
-    builder.build(X509Utils.contentSigner(signer.key.getPrivate.toPrivateKey), signer.certificateChain.getCertificateList.map(new X509CertificateHolder(_)), new Date())
+    builder.build(
+      X509Utils.contentSigner(signer.key.getPrivate.toPrivateKey),
+      signer.certificateChain.getCertificateList.map(tlsCert => new X509CertificateHolder(tlsCert.toCertificate)),
+      new Date())
   }
 
   private def loadUrl(url: String, request: OCSPReq): OCSPResp = concurrent.blocking {

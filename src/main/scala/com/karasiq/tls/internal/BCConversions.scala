@@ -3,7 +3,7 @@ package com.karasiq.tls.internal
 import java.io.ByteArrayInputStream
 import java.security.cert.CertificateFactory
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
-import java.security.{KeyFactory, PrivateKey, PublicKey}
+import java.security.{KeyFactory, PrivateKey, PublicKey, SecureRandom}
 
 import com.karasiq.tls.TLS
 import org.apache.commons.io.IOUtils
@@ -11,9 +11,11 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.{AlgorithmIdentifier, SubjectPublicKeyInfo}
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.params.{AsymmetricKeyParameter, DSAKeyParameters, ECKeyParameters, RSAKeyParameters}
-import org.bouncycastle.crypto.tls.CipherSuite
+import org.bouncycastle.tls.CipherSuite
 import org.bouncycastle.crypto.util.{PrivateKeyFactory, PrivateKeyInfoFactory, PublicKeyFactory, SubjectPublicKeyInfoFactory}
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
+import org.bouncycastle.tls.crypto.TlsCertificate
+import org.bouncycastle.tls.crypto.impl.bc.{BcTlsCertificate, BcTlsCrypto}
 
 import scala.util.Try
 
@@ -21,6 +23,9 @@ import scala.util.Try
  * Provides conversions between JCA and BouncyCastle classes
  */
 object BCConversions {
+
+  private val crypto = new BcTlsCrypto(SecureRandom.getInstanceStrong)
+
   implicit class JavaKeyOps(private val key: java.security.Key) extends AnyVal {
     private def convertPKCS8Key(data: Array[Byte], public: SubjectPublicKeyInfo): AsymmetricCipherKeyPair = {
       new AsymmetricCipherKeyPair(PublicKeyFactory.createKey(public), PrivateKeyFactory.createKey(data))
@@ -123,16 +128,24 @@ object BCConversions {
   }
 
   implicit class JavaCertificateOps(private val cert: java.security.cert.Certificate) extends AnyVal {
-    def toTlsCertificate: TLS.Certificate = {
+    def toCertificate: TLS.Certificate = {
       org.bouncycastle.asn1.x509.Certificate.getInstance(cert.getEncoded)
     }
 
+    def toTlsCertificate: TlsCertificate = {
+      new BcTlsCertificate(crypto, cert.getEncoded)
+    }
+
     def toTlsCertificateChain: TLS.CertificateChain = {
-      toTlsCertificate.toTlsCertificateChain
+      toCertificate.toTlsCertificateChain
     }
   }
 
-  implicit class CertificateOps(private val cert: TLS.Certificate) extends AnyVal {
+  implicit class TlsCertificateOps(private val cert: TlsCertificate) extends AnyVal {
+    def toCertificate: TLS.Certificate = {
+      org.bouncycastle.asn1.x509.Certificate.getInstance(cert.getEncoded)
+    }
+
     def toTlsCertificateChain: TLS.CertificateChain = {
       new TLS.CertificateChain(Array(cert))
     }
@@ -148,8 +161,32 @@ object BCConversions {
     }
   }
 
+  implicit class CertificateOps(private val cert: TLS.Certificate) extends AnyVal {
+    def toTlsCertificate: TlsCertificate = {
+      new BcTlsCertificate(crypto, cert.getEncoded)
+    }
+
+    def toTlsCertificateChain: TLS.CertificateChain = {
+      new TLS.CertificateChain(Array(cert.toTlsCertificate))
+    }
+
+    def toJavaCertificate: java.security.cert.Certificate = {
+      val certificateFactory = CertificateFactory.getInstance("X.509")
+      val inputStream = new ByteArrayInputStream(cert.getEncoded)
+      try {
+        certificateFactory.generateCertificate(inputStream)
+      } finally {
+        IOUtils.closeQuietly(inputStream)
+      }
+    }
+  }
+
   implicit class CertificateChainOps(private val chain: TLS.CertificateChain) extends AnyVal {
-    def toTlsCertificate: TLS.Certificate = {
+    def toCertificate: TLS.Certificate = {
+      toTlsCertificate.toCertificate
+    }
+
+    def toTlsCertificate: TlsCertificate = {
       chain.getCertificateList.headOption
         .getOrElse(throw new NoSuchElementException("Empty certificate chain"))
     }
