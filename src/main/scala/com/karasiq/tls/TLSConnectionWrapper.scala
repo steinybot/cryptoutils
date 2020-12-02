@@ -2,7 +2,7 @@ package com.karasiq.tls
 
 import java.nio.channels.SocketChannel
 
-import org.bouncycastle.crypto.tls.{AlertDescription, TlsFatalAlert}
+import org.bouncycastle.tls.{AlertDescription, TlsFatalAlert}
 
 import scala.concurrent.Promise
 import scala.util.control.Exception

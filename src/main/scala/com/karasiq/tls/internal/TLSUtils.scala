@@ -3,11 +3,11 @@ package com.karasiq.tls.internal
 import java.security.Provider
 
 import com.karasiq.tls.TLS
-import com.karasiq.tls.internal.BCConversions.CipherSuiteId
+import com.karasiq.tls.internal.BCConversions._
 import com.karasiq.tls.x509.CertificateVerifier
 import com.typesafe.config.ConfigFactory
 import org.bouncycastle.crypto.params._
-import org.bouncycastle.crypto.tls._
+import org.bouncycastle.tls._
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.jce.spec.ECParameterSpec
@@ -55,9 +55,9 @@ object TLSUtils {
     asJavaVector(trustStore.trustedRootCertificates.map(_.getSubject))
   }
 
-  def certificateRequest(protocolVersion: ProtocolVersion, verifier: CertificateVerifier): CertificateRequest = {
+  def certificateRequest(protocolVersion: ProtocolVersion, verifier: CertificateVerifier, context: TlsContext): CertificateRequest = {
     val certificateTypes = Array(ClientCertificateType.rsa_sign, ClientCertificateType.ecdsa_sign, ClientCertificateType.dss_sign)
-    new CertificateRequest(certificateTypes, defaultSignatureAlgorithms(protocolVersion), authoritiesOf(verifier))
+    new CertificateRequest(certificateTypes, defaultSignatureAlgorithms(protocolVersion, context), authoritiesOf(verifier))
   }
 
   def certificateFor(keySet: TLS.KeySet, certificateRequest: CertificateRequest): Option[TLS.CertificateKey] = {
@@ -76,7 +76,8 @@ object TLSUtils {
   }
 
   def isInAuthorities(chain: TLS.CertificateChain, certificateRequest: CertificateRequest): Boolean = {
-    chain.getCertificateList.exists { cert ⇒
+    chain.getCertificateList.exists { tlsCert ⇒
+      val cert = tlsCert.toCertificate
       certificateRequest.getCertificateAuthorities.contains(cert.getSubject) || certificateRequest.getCertificateAuthorities.contains(cert.getIssuer)
     }
   }
@@ -119,9 +120,9 @@ object TLSUtils {
     config.getString("hash-algorithm")
   }
 
-  def defaultSignatureAlgorithms(protocolVersion: ProtocolVersion): java.util.Vector[_] = {
+  def defaultSignatureAlgorithms(protocolVersion: ProtocolVersion, context: TlsContext): java.util.Vector[_] = {
     if (TlsUtils.isSignatureAlgorithmsExtensionAllowed(protocolVersion)) {
-      TlsUtils.getDefaultSupportedSignatureAlgorithms
+      TlsUtils.getDefaultSupportedSignatureAlgorithms(context)
     } else {
       null
     }

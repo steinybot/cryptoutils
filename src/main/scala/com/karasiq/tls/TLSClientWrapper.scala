@@ -4,10 +4,12 @@ import java.net.InetSocketAddress
 import java.nio.channels.SocketChannel
 import java.security.SecureRandom
 
-import com.karasiq.tls.internal.BCConversions.CipherSuiteId
+import com.karasiq.tls.internal.BCConversions._
 import com.karasiq.tls.internal.{SocketChannelWrapper, TLSUtils}
 import com.karasiq.tls.x509.CertificateVerifier
-import org.bouncycastle.crypto.tls._
+import org.bouncycastle.tls._
+import org.bouncycastle.tls.crypto.TlsCryptoParameters
+import org.bouncycastle.tls.crypto.impl.bc.{BcDefaultTlsCredentialedSigner, BcTlsCrypto}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -20,30 +22,39 @@ class TLSClientWrapper(verifier: CertificateVerifier, address: InetSocketAddress
   }
 
   override def apply(connection: SocketChannel): SocketChannel = {
-    val protocol = new TlsClientProtocol(SocketChannelWrapper.inputStream(connection), SocketChannelWrapper.outputStream(connection), SecureRandom.getInstanceStrong)
-    val client = new DefaultTlsClient() {
-      override def getMinimumVersion: ProtocolVersion = {
-        TLSUtils.minVersion()
+    val protocol = new TlsClientProtocol(SocketChannelWrapper.inputStream(connection), SocketChannelWrapper.outputStream(connection))
+    val crypto = new BcTlsCrypto(SecureRandom.getInstanceStrong)
+    val client = new DefaultTlsClient(crypto) {
+      @volatile
+      protected var selectedCipherSuite = 0
+
+      override def getSupportedVersions: Array[ProtocolVersion] = {
+        TLSUtils.maxVersion().downTo(TLSUtils.minVersion())
       }
 
       override def getCipherSuites: Array[Int] = {
         TLSUtils.defaultCipherSuites()
       }
 
+      override def notifySelectedCipherSuite(selectedCipherSuite: Int): Unit = {
+        this.selectedCipherSuite = selectedCipherSuite
+      }
+
       override def notifyHandshakeComplete(): Unit = {
         handshake.trySuccess(true)
+        this.cipherSuites
         onInfo(s"Selected cipher suite: ${CipherSuiteId.asString(selectedCipherSuite)}")
       }
 
       override def getAuthentication: TlsAuthentication = new TlsAuthentication {
         override def getClientCredentials(certificateRequest: CertificateRequest): TlsCredentials = wrapException("Could not provide client credentials") {
           getClientCertificate(certificateRequest)
-            .map(ck ⇒ new DefaultTlsSignerCredentials(context, ck.certificateChain, ck.key.getPrivate, TLSUtils.signatureAlgorithm(ck.key.getPrivate))) // Ignores certificateRequest data
+            .map(ck ⇒ new BcDefaultTlsCredentialedSigner(new TlsCryptoParameters(context), crypto, ck.key.getPrivate, ck.certificateChain, TLSUtils.signatureAlgorithm(ck.key.getPrivate))) // Ignores certificateRequest data
             .orNull
         }
 
-        override def notifyServerCertificate(serverCertificate: TLS.CertificateChain): Unit = wrapException("Server certificate error") {
-          val chain: List[TLS.Certificate] = serverCertificate.getCertificateList.toList
+        override def notifyServerCertificate(serverCertificate: TlsServerCertificate): Unit = wrapException("Server certificate error") {
+          val chain: List[TLS.Certificate] = serverCertificate.getCertificate.getCertificateList.toList.map(_.toCertificate)
 
           if (chain.nonEmpty) {
             onInfo(s"Server certificate chain: ${chain.map(_.getSubject).mkString("; ")}")

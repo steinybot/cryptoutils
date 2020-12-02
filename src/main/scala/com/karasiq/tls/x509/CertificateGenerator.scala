@@ -23,7 +23,7 @@ class CertificateGenerator {
   protected val secureRandom: SecureRandom = SecureRandom.getInstanceStrong
 
   private def makeChain(issuer: TLS.CertificateChain, certificate: TLS.Certificate): TLS.CertificateChain = {
-    new TLS.CertificateChain(Array(certificate) ++ issuer.getCertificateList)
+    new TLS.CertificateChain(Array(certificate.toTlsCertificate) ++ issuer.getCertificateList)
   }
 
   /**
@@ -55,7 +55,7 @@ class CertificateGenerator {
 
     val certificateBuilder = new X509v3CertificateBuilder(issuer.certificate.getSubject, serial.underlying(), new Date(), Date.from(notAfter),
       request.getSubject, request.getSubjectPublicKeyInfo)
-    
+
     (extensions ++ CertExtension.identifiers(request.getSubjectPublicKeyInfo, Some(issuer.certificate)) ++ CSRUtils.extensionsOf(request)).foreach { ext ⇒
       certificateBuilder.addExtension(ext.id, ext.critical, ext.value)
     }

@@ -51,10 +51,10 @@ class X509Test extends FreeSpec with Matchers {
         PEM.certificationRequest.fromString(encoded).getSubject shouldBe request.getSubject
         val cert = keyGenerator.signRequest(request, certificationAuthority)
         val verifier = CertificateVerifier(CertificateStatusProvider.AlwaysValid, certificationAuthority.certificate)
-        assert(verifier.isChainValid(cert.getCertificateList.toList))
-        X509Utils.verifyAuthorityIdentifier(cert.toTlsCertificate, certificationAuthority.certificate) shouldBe Some(true)
-        X509Utils.verifyPublicKeyIdentifier(cert.toTlsCertificate, serverKeySet.ecdsa.get.key.getPublic.toSubjectPublicKeyInfo) shouldBe Some(true)
-        println("CSR signed: " + cert.toTlsCertificate.getSubject)
+        assert(verifier.isChainValid(cert.getCertificateList.toList.map(_.toCertificate)))
+        X509Utils.verifyAuthorityIdentifier(cert.toCertificate, certificationAuthority.certificate) shouldBe Some(true)
+        X509Utils.verifyPublicKeyIdentifier(cert.toCertificate, serverKeySet.ecdsa.get.key.getPublic.toSubjectPublicKeyInfo) shouldBe Some(true)
+        println("CSR signed: " + cert.toCertificate.getSubject)
       }
 
       "should read CRL" in {
