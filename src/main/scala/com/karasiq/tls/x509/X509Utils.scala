@@ -9,7 +9,6 @@ import java.util
 import com.karasiq.tls.TLS
 import com.karasiq.tls.internal.BCConversions.{DigestAlgorithm, SignatureDigestAlgorithm}
 import com.karasiq.tls.internal.TLSUtils
-import com.typesafe.config.ConfigFactory
 import org.bouncycastle.asn1.ASN1Encodable
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.asn1.x500.{X500Name, X500NameBuilder}
@@ -20,7 +19,7 @@ import org.bouncycastle.operator.jcajce.{JcaContentSignerBuilder, JcaContentVeri
 import org.bouncycastle.operator.{ContentSigner, ContentVerifierProvider}
 
 object X509Utils {
-  private val config = ConfigFactory.load().getConfig("karasiq.tls.x509-defaults")
+  private val config = TLSUtils.config.getConfig("x509-defaults")
 
   /**
    * Ensures that certificate usage as CA is allowed
@@ -213,7 +212,7 @@ object X509Utils {
       .setProvider(TLSUtils.provider)
       .build(new X509CertificateHolder(certificate))
   }
-  
+
   private[tls] def contentSigner(key: PrivateKey, hashAlg: String = defaultSignatureHash()): ContentSigner = {
     new JcaContentSignerBuilder(SignatureDigestAlgorithm(key.getAlgorithm, hashAlg))
       .setProvider(TLSUtils.provider)

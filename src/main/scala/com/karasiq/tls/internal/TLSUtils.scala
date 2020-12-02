@@ -19,7 +19,7 @@ import scala.util.Try
 object TLSUtils {
   private[tls] val provider: Provider = new BouncyCastleProvider
 
-  private val config = ConfigFactory.load().getConfig("karasiq.tls")
+  private[tls] val config = ConfigFactory.load(TLSUtils.getClass.getClassLoader).getConfig("karasiq.tls")
 
   def signatureAlgorithm(key: AsymmetricKeyParameter, hashAlgorithm: String = defaultHashAlgorithm()): SignatureAndHashAlgorithm = {
     val hash: Short = {

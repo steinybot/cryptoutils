@@ -6,8 +6,7 @@ import java.security.KeyStore
 import com.karasiq.tls.TLS.{Certificate, CertificateChain, CertificateKey, KeySet}
 import com.karasiq.tls.TLSKeyStore.{CertificateEntry, KeyEntry}
 import com.karasiq.tls.internal.BCConversions._
-import com.karasiq.tls.internal.ObjectLoader
-import com.typesafe.config.ConfigFactory
+import com.karasiq.tls.internal.{ObjectLoader, TLSUtils}
 import org.apache.commons.io.IOUtils
 import org.bouncycastle.crypto.params.{AsymmetricKeyParameter, DSAKeyParameters, ECKeyParameters, RSAKeyParameters}
 
@@ -52,13 +51,11 @@ object TLSKeyStore {
   }
 
   def defaultKeyStore(): KeyStore = {
-    val config = ConfigFactory.load().getConfig("karasiq.tls")
-    this.keyStore(config.getString("key-store"), this.defaultPassword())
+    this.keyStore(TLSUtils.config.getString("key-store"), this.defaultPassword())
   }
 
   def defaultPassword(): String = {
-    val config = ConfigFactory.load().getConfig("karasiq.tls")
-    config.getString("key-store-pass")
+    TLSUtils.config.getString("key-store-pass")
   }
 
   def open(path: String, password: String): TLSKeyStore = {
