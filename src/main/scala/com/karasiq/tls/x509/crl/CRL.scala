@@ -9,10 +9,9 @@ import java.util.concurrent.TimeUnit
 
 import com.karasiq.tls.TLS
 import com.karasiq.tls.internal.BCConversions._
-import com.karasiq.tls.internal.ObjectLoader
+import com.karasiq.tls.internal.{ObjectLoader, TLSUtils}
 import com.karasiq.tls.x509.X509Utils
 import com.karasiq.tls.x509.crl.CRLHolder.{Revoked, RevokedCert, RevokedCerts, RevokedSerial}
-import com.typesafe.config.ConfigFactory
 import org.bouncycastle.asn1.x509._
 import org.bouncycastle.cert.{X509CRLHolder, X509CertificateHolder, X509v2CRLBuilder}
 
@@ -77,7 +76,7 @@ trait CRLReader extends ObjectLoader[X509CRLHolder] {
  * @see [[https://en.wikipedia.org/wiki/Revocation_list]]
  */
 object CRL extends CRLBuilder with CRLReader {
-  private val config = ConfigFactory.load().getConfig("karasiq.tls.crl-defaults")
+  private val config = TLSUtils.config.getConfig("crl-defaults")
 
   def defaultKeyIdAlgorithm(): String = {
     config.getString("key-id-algorithm")
@@ -97,7 +96,7 @@ object CRL extends CRLBuilder with CRLReader {
     extGen.addExtension(Extension.certificateIssuer, true, new GeneralNames(new GeneralName(issuer.certificate.getSubject)))
     builder.addCRLEntry(serial, Date.from(revocationDate), extGen.generate())
   }
-  
+
   def build(issuer: TLS.CertificateKey, revoked: Seq[Revoked], nextUpdate: Instant = defaultNextUpdate()): X509CRLHolder = {
     assert(X509Utils.isKeyUsageAllowed(issuer.certificate, KeyUsage.cRLSign), "CRL signing not allowed")
 
