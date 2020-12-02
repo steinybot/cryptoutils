@@ -10,7 +10,7 @@ import org.apache.commons.io.IOUtils
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.{AlgorithmIdentifier, SubjectPublicKeyInfo}
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
-import org.bouncycastle.crypto.params.{AsymmetricKeyParameter, DSAKeyParameters, ECKeyParameters, RSAKeyParameters}
+import org.bouncycastle.crypto.params.{AsymmetricKeyParameter, DSAKeyParameters, ECKeyParameters, Ed25519PrivateKeyParameters, RSAKeyParameters}
 import org.bouncycastle.tls.CipherSuite
 import org.bouncycastle.crypto.util.{PrivateKeyFactory, PrivateKeyInfoFactory, PublicKeyFactory, SubjectPublicKeyInfoFactory}
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
@@ -102,6 +102,9 @@ object BCConversions {
 
         case _: DSAKeyParameters ⇒
           "DSA"
+
+        case _: Ed25519PrivateKeyParameters ⇒
+          "Ed25519"
 
         case _ ⇒
           throw new IllegalArgumentException(s"Unknown key algorithm: ${key.getClass}")

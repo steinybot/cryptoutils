@@ -102,7 +102,7 @@ object CRL extends CRLBuilder with CRLReader {
 
     val builder = new X509v2CRLBuilder(issuer.certificate.getSubject, new Date())
     val extensionUtils = X509Utils.extensionUtils(defaultKeyIdAlgorithm())
-    val contentSigner = X509Utils.contentSigner(issuer.key.getPrivate.toPrivateKey, defaultSignAlgorithm())
+    val contentSigner = X509Utils.contentSigner(issuer.key.getPrivate.toPrivateKey)
 
     builder.addExtension(Extension.authorityKeyIdentifier, false, extensionUtils.createAuthorityKeyIdentifier(new X509CertificateHolder(issuer.certificate)))
     builder.setNextUpdate(Date.from(nextUpdate))

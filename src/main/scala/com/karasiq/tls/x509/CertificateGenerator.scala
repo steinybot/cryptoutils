@@ -73,9 +73,15 @@ class CertificateGenerator {
    * @param extensions X509 extensions
    * @return Created certificate
    */
-  def create(keyPair: KeyPair, subject: X500Name, issuer: Option[TLS.CertificateKey] = None, serial: BigInt = BigInt(1), notAfter: Instant = X509Utils.defaultExpire(), extensions: Set[CertExtension] = CertExtension.defaultExtensions()): TLS.CertificateKey = {
+  def create(keyPair: KeyPair,
+             subject: X500Name,
+             issuer: Option[TLS.CertificateKey] = None,
+             serial: BigInt = BigInt(1),
+             notAfter: Instant = X509Utils.defaultExpire(),
+             extensions: Set[CertExtension] = CertExtension.defaultExtensions(),
+             signatureAlgorithm: Option[String] = None): TLS.CertificateKey = {
     val signKey = issuer.fold(keyPair.getPrivate)(_.key.getPrivate.toPrivateKey)
-    val contentSigner = X509Utils.contentSigner(signKey)
+    val contentSigner = X509Utils.contentSigner(signKey, signatureAlgorithm)
     val certificateBuilder = new X509v3CertificateBuilder(issuer.fold(subject)(_.certificate.getSubject), serial.underlying(), new Date(), Date.from(notAfter),
       subject, keyPair.getPublic.toSubjectPublicKeyInfo)
 
@@ -126,6 +132,23 @@ class CertificateGenerator {
     keyPairGenerator.initialize(curve, secureRandom)
     val keyPair = keyPairGenerator.generateKeyPair()
     create(keyPair, subject, issuer, serial, notAfter, extensions)
+  }
+
+  /**
+   * Generates new Ed25519 key pair and creates X509 certificate for it
+   * @param subject Certificate subject
+   * @param issuer Certificate issuer (None = self-signed)
+   * @param serial Certificate serial number
+   * @param notAfter Certificate expiration date
+   * @param extensions X509 extensions
+   * @return Created certificate and key pair
+   */
+  def generateEd25519(subject: X500Name, issuer: Option[TLS.CertificateKey] = None, serial: BigInt = BigInt(1), notAfter: Instant = X509Utils.defaultExpire(), extensions: Set[CertExtension] = CertExtension.defaultExtensions()): TLS.CertificateKey = {
+    val keyPairGenerator = KeyPairGenerator.getInstance("ED25519", TLSUtils.provider)
+    keyPairGenerator.initialize(255, secureRandom)
+    val keyPair = keyPairGenerator.generateKeyPair()
+    val signatureAlgorithm = Some("ED25519")
+    create(keyPair, subject, issuer, serial, notAfter, extensions, signatureAlgorithm = signatureAlgorithm)
   }
 
   /**

@@ -213,8 +213,9 @@ object X509Utils {
       .build(new X509CertificateHolder(certificate))
   }
 
-  private[tls] def contentSigner(key: PrivateKey, hashAlg: String = defaultSignatureHash()): ContentSigner = {
-    new JcaContentSignerBuilder(SignatureDigestAlgorithm(key.getAlgorithm, hashAlg))
+  private[tls] def contentSigner(key: PrivateKey, signatureAlgorithm: Option[String] = None): ContentSigner = {
+    val algorithm = signatureAlgorithm.getOrElse(SignatureDigestAlgorithm(key.getAlgorithm, defaultSignatureHash()))
+    new JcaContentSignerBuilder(algorithm)
       .setProvider(TLSUtils.provider)
       .build(key)
   }
